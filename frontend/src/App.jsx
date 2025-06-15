@@ -1,15 +1,24 @@
-import React from 'react'
-import { pingServer } from './services/api'
-import { useState } from 'react'
-import { useEffect } from 'react';
-const App = () => {
-  const [msg,setMsg] = useState("");
-  useEffect(()=>{
-    pingServer().then(data=>setMsg(data.msg))
-  },[])
-  return (
-    <div className='text-2xl'>Ap  {msg || 'Loading...'}p</div>
-  )
-}
+import React from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Register from "./pages/Register";
+import Login from "./pages/Login";
+import Profile from "./pages/Profile";
+import { useSelector } from "react-redux";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
-export default App
+const App = () => {
+  const { user } = useSelector((state) => state.auth);
+  return (
+    <BrowserRouter>
+      <ToastContainer position="top-center" autoClose={2000} />
+      <Routes>
+        <Route path="/register" element={!user ? <Register /> : <Profile />} />
+        <Route path="/login" element={!user ? <Login /> : <Profile />} />
+        <Route path="/profile" element={user ? <Profile /> : <Login />} />
+      </Routes>
+    </BrowserRouter>
+  );
+};
+
+export default App;
