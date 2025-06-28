@@ -1,58 +1,51 @@
 import { User } from "../models/user.models.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
-import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import generateToken from "../utils/generateToken.js";
 
-const maxAge = 3 * 24 * 60 * 60;
+export const register = async (req, res) => {
+  const { name, email, password, role } = req.body;
 
-const createToken = (id, role) => {
-  return jwt.sign({ id, role }, process.env.JWT_SECRET, {
-    expiresIn: maxAge,
+  const userExists = await User.findOne({ email });
+  if (userExists)
+    return res.status(400).json({ message: "User already exists" });
+
+  const hashed = await bcrypt.hash(password, 10);
+  const user = await User.create({ name, email, password: hashed, role });
+
+  generateToken(res, user._id);
+  res.status(201).json({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
   });
 };
 
-export const register = asyncHandler(async (req, res) => {
-  const { name, email, password } = req.body;
-  const exists = await User.findOne({ email });
-  if (exists) return res.status(400).json({ error: "Email already in use" });
-  const hashed = await bcrypt.hash(password, 10);
-  const user = await User.create({ name, email, password: hashed });
-  const token = createToken(user._id, user.role);
-  res.cookie("token", token, {
-    httpOnly: true,
-    maxAge: maxAge * 1000,
-    sameSite: "Lax",
-    secure: false, // change to true in prod with https
-  });
-  res.status(201).json({ _id: user._id, name: user.name, role: user.role });
-});
-
-export const login = asyncHandler(async (req, res) => {
+export const login = async (req, res) => {
   const { email, password } = req.body;
+
   const user = await User.findOne({ email });
-  if (!user)
-    return res.status(400).json({ error: "Invalid email or password" });
+  if (!user) return res.status(400).json({ message: "Invalid credentials" });
+
   const match = await bcrypt.compare(password, user.password);
-  if (!match)
-    return res.status(400).json({ error: "Invalid email or password" });
+  if (!match) return res.status(400).json({ message: "Invalid credentials" });
 
-  const token = createToken(user._id, user.role);
-  res.cookie("token", token, {
-    httpOnly: true,
-    maxAge: maxAge * 1000,
-    sameSite: "Lax",
-    secure: false,
+  generateToken(res, user._id);
+  res.json({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
   });
+};
 
-  res.status(200).json({ _id: user._id, name: user.name, role: user.role });
-});
-
-export const logout = asyncHandler(async (req, res) => {
-  res.clearCookie("token");
+export const logout = (req, res) => {
+  res.cookie("jwt", "", { maxAge: 1 });
   res.json({ message: "Logged out successfully" });
-});
+};
 
-export const getProfile = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.userId).select("-password");
-  res.json(user);
-});
+export const getProfile = async (req, res) => {
+  if (!req.user) return res.status(401).json({ message: "Not authorized" });
+
+  res.json(req.user);
+};

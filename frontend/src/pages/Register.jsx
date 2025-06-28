@@ -1,71 +1,106 @@
-import React, { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
-import { registerUser } from "../features/auth/authSlice";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import axios from "../utils/axios";
+import { setUser } from "../redux/slice/authSlice";
+import Navbar from "../components/Navbar";
+import toast from "react-hot-toast";
 
 const Register = () => {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "user",
+  });
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user, error } = useSelector((state) => state.auth);
 
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const handleChange = (e) =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  useEffect(() => {
-    if (user) navigate("/profile");
-  }, [user, navigate]);
-
-  const handleSubmit = async (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
-    await registerUser(form, dispatch);
+    try {
+      const res = await axios.post("/auth/register", formData);
+      dispatch(setUser(res.data));
+      const role = res.data.role;
+      if (role === "user") navigate("/user");
+      else if (role === "provider") navigate("/provider/dashboard");
+      else if (role === "admin") navigate("/admin/dashboard");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Registration failed");
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4 sm:px-6">
-      <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 w-full max-w-md">
-        <h2 className="text-2xl sm:text-3xl font-bold text-center mb-6 text-blue-700">
-          Create an Account
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="min-h-screen bg-gradient-to-r from-blue-500 to-indigo-600 flex flex-col">
+      <Navbar/>
+
+      {/* Register Form */}
+      <div className="flex flex-1 items-center justify-center px-4 py-12">
+        <form
+          onSubmit={handleRegister}
+          className="w-full max-w-md bg-white p-10 rounded-2xl shadow-xl space-y-6"
+        >
+          <h2 className="text-3xl font-bold text-center text-blue-600">
+            Create Your Account
+          </h2>
+
           <input
-            type="text"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
             placeholder="Full Name"
-            className="w-full px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            required
+            className="w-full px-4 py-3 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
           />
+
           <input
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
             type="email"
-            placeholder="Email"
-            className="w-full px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            required
+            placeholder="Email Address"
+            className="w-full px-4 py-3 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
           />
+
           <input
             type="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
             placeholder="Password"
-            className="w-full px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            required
+            className="w-full px-4 py-3 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
           />
+
+          <select
+            name="role"
+            value={formData.role}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border rounded-full bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+          >
+            <option value="user">User</option>
+            <option value="provider">Provider</option>
+          </select>
+
           <button
             type="submit"
-            className="w-full text-sm sm:text-base bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition duration-300"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-full transition duration-300"
           >
             Register
           </button>
-          {error && (
-            <p className="text-red-600 text-sm mt-2 text-center">{error}</p>
-          )}
+
+          <p className="text-sm text-center text-gray-600">
+            Already have an account?{" "}
+            <Link
+              to="/login"
+              className="text-blue-600 hover:underline font-medium"
+            >
+              Login here
+            </Link>
+          </p>
         </form>
-        <p className="text-xs sm:text-sm text-gray-600 mt-4 text-center">
-          Already have an account?{" "}
-          <a href="/login" className="text-blue-600 underline">
-            Login
-          </a>
-        </p>
       </div>
     </div>
   );

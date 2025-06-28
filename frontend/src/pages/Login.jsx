@@ -1,87 +1,82 @@
-import React, { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { Link, useNavigate } from "react-router-dom";
-import { loginUser } from "../features/auth/authSlice";
-import { toast } from "react-toastify";
+import React, { useState } from "react";
+import axios from "../utils/axios";
+import { useDispatch } from "react-redux";
+import { useNavigate, Link } from "react-router-dom";
+import { setUser } from "../redux/slice/authSlice";
+import Navbar from "../components/Navbar";
+import toast from "react-hot-toast";
 
 const Login = () => {
+  const [formData, setFormData] = useState({ email: "qwerty@gmail.com", password: "qwerty" });
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { user, error } = useSelector((state) => state.auth);
-  const [form, setForm] = useState({ email: "", password: "" });
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const handleChange = (e) =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  useEffect(() => {
-    if (user) {
-      toast.success("Login successful 🎉");
-      setTimeout(() => navigate("/profile"), 1500);
-    }
-  }, [user, navigate]);
-
-  const handleSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    await loginUser(form, dispatch);
-    setLoading(false);
+    try {
+      const res = await axios.post("/auth/login", formData);
+      dispatch(setUser(res.data));
+      const role = res.data.role;
+      if (role === "user") navigate("/user");
+      else if (role === "provider") navigate("/provider/dashboard");
+      else if (role === "admin") navigate("/admin/dashboard");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Login failed");
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4 sm:px-6">
-      <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 w-full max-w-md">
-        <h2 className="text-2xl sm:text-3xl font-bold text-center mb-6 text-blue-700">
-          Login to Your Account
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="min-h-screen bg-gradient-to-r from-blue-500 to-indigo-600 flex flex-col">
+    <Navbar/>
+
+      {/* Login Form */}
+      <div className="flex flex-1 items-center justify-center px-4 py-12">
+        <form
+          onSubmit={handleLogin}
+          className="w-full max-w-md bg-white p-10 rounded-2xl shadow-xl space-y-6"
+        >
+          <h2 className="text-3xl font-bold text-center text-blue-600">
+            Welcome Back
+          </h2>
+
           <input
+            name="email"
             type="email"
-            placeholder="Email"
-            className="w-full px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            required
+            value={formData.email}
+            onChange={handleChange}
+            placeholder="Email Address"
+            className="w-full px-4 py-3 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
           />
 
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder="Password"
-              className="w-full px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              required
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-2 text-sm text-gray-600 hover:text-blue-600"
-            >
-              {showPassword ? "Hide" : "Show"}
-            </button>
-          </div>
+          <input
+            type="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            placeholder="Password"
+            className="w-full px-4 py-3 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+          />
 
           <button
             type="submit"
-            className={`w-full text-sm sm:text-base bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition duration-300 ${
-              loading && "opacity-70 cursor-not-allowed"
-            }`}
-            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-full transition duration-300"
           >
-            {loading ? "Logging in..." : "Login"}
+            Login
           </button>
 
-          {error && (
-            <p className="text-red-600 text-sm mt-2 text-center">{error}</p>
-          )}
+          <p className="text-sm text-center text-gray-600">
+            Don’t have an account?{" "}
+            <Link
+              to="/register"
+              className="text-blue-600 hover:underline font-medium"
+            >
+              Register here
+            </Link>
+          </p>
         </form>
-
-        <p className="text-xs sm:text-sm text-gray-600 mt-4 text-center">
-          Don’t have an account?{" "}
-          <Link to="/register" className="text-blue-600 underline">
-            Register
-          </Link>
-        </p>
       </div>
     </div>
   );

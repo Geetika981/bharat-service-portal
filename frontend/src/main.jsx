@@ -1,15 +1,21 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.jsx'
-import { Provider } from 'react-redux'
-import { persistor, store } from './app/store.js'
-import { PersistGate } from 'redux-persist/integration/react'
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App";
+import { Provider } from "react-redux";
+import "./index.css";
+import { store, persistor } from "./redux/store";
+import { PersistGate } from "redux-persist/integration/react";
 
-createRoot(document.getElementById('root')).render(
+import { Elements } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY); // Add this to .env
+
+ReactDOM.createRoot(document.getElementById("root")).render(
   <Provider store={store}>
     <PersistGate loading={null} persistor={persistor}>
-      <App />
+      <Elements stripe={stripePromise}>
+        <App />
+      </Elements>
     </PersistGate>
   </Provider>
-)
+);
