@@ -7,7 +7,7 @@ import Navbar from "../components/Navbar";
 import toast from "react-hot-toast";
 
 const Login = () => {
-  const [formData, setFormData] = useState({ email: "qwerty@gmail.com", password: "qwerty" });
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const dispatch = useDispatch();
   const navigate = useNavigate();
 

@@ -48,7 +48,7 @@ function App() {
         <Route
           path="/register"
           element={
-            user ? <Navigate to={`/${user.role}/dashboard`} /> : <Register />
+            user ? <Navigate to={`/${user.role}`} /> : <Register />
           }
         />
 
